@@ -207,6 +207,7 @@ async def get_financial_chart(
                         value = 0
                     
                     values.append(round(value, 2))  # 소수점 2자리로 반올림
+                    print(f"🔍 {year}년 {chart_type} 값: {value} (metrics에서: {metrics.get(chart_type if chart_type in ['revenue', 'profit', 'assets', 'equity'] else 'revenue', 0)})")
                     
                 except Exception as e:
                     print(f"❌ {year}년 데이터 처리 오류: {e}")
@@ -227,7 +228,15 @@ async def get_financial_chart(
             }
         
         # 차트 생성
-        fig = create_financial_chart(years, values, chart_type)
+        print(f"🔍 차트 생성 시작 - years: {years}, values: {values}, chart_type: {chart_type}")
+        try:
+            fig = create_financial_chart(years, values, chart_type)
+            print(f"🔍 차트 생성 성공!")
+        except Exception as chart_error:
+            print(f"❌ 차트 생성 실패: {chart_error}")
+            import traceback
+            print(f"❌ 차트 생성 상세 에러: {traceback.format_exc()}")
+            raise chart_error
         
         return {
             "chart": json.loads(fig.to_json()),
@@ -257,6 +266,15 @@ async def company_detail(request: Request, corp_code: str):
 def create_financial_chart(years: List[int], values: List[float], chart_type: str):
     """재무 차트 생성"""
     
+    # 입력 데이터 검증
+    if not years or not values:
+        raise ValueError("연도 또는 값 데이터가 비어있습니다")
+    
+    if len(years) != len(values):
+        raise ValueError(f"연도 개수({len(years)})와 값 개수({len(values)})가 일치하지 않습니다")
+    
+    print(f"🔍 차트 생성 함수 - years: {years}, values: {values}, chart_type: {chart_type}")
+    
     chart_configs = {
         "revenue": {"title": "매출액 추이", "color": "#2E86AB", "unit": "억원"},
         "profit": {"title": "순이익 추이", "color": "#A23B72", "unit": "억원"},
@@ -265,42 +283,64 @@ def create_financial_chart(years: List[int], values: List[float], chart_type: st
     }
     
     config = chart_configs.get(chart_type, chart_configs["revenue"])
+    print(f"🔍 차트 설정: {config}")
     
-    fig = go.Figure()
+    try:
+        fig = go.Figure()
+        print(f"🔍 Figure 객체 생성 성공")
+    except Exception as e:
+        print(f"❌ Figure 객체 생성 실패: {e}")
+        raise
     
     # 선 그래프 추가
-    fig.add_trace(go.Scatter(
-        x=years,
-        y=values,
-        mode='lines+markers',
-        name=config["title"],
-        line=dict(color=config["color"], width=3),
-        marker=dict(size=8, color=config["color"]),
-        hovertemplate=f'<b>%{{x}}년</b><br>{config["title"]}: %{{y:,.0f}}{config["unit"]}<extra></extra>'
-    ))
+    try:
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=values,
+            mode='lines+markers',
+            name=config["title"],
+            line=dict(color=config["color"], width=3),
+            marker=dict(size=8, color=config["color"]),
+            hovertemplate=f'<b>%{{x}}년</b><br>{config["title"]}: %{{y:,.0f}}{config["unit"]}<extra></extra>'
+        ))
+        print(f"🔍 Scatter trace 추가 성공")
+    except Exception as e:
+        print(f"❌ Scatter trace 추가 실패: {e}")
+        raise
     
     # 레이아웃 설정
-    fig.update_layout(
-        title={
-            'text': config["title"],
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': {'size': 20, 'color': '#2C3E50'}
-        },
-        xaxis_title="연도",
-        yaxis_title=f"{config['title']} ({config['unit']})",
-        template="plotly_white",
-        height=400,
-        hovermode='x unified',
-        font=dict(family="Arial, sans-serif", size=12),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)'
-    )
+    try:
+        fig.update_layout(
+            title={
+                'text': config["title"],
+                'x': 0.5,
+                'xanchor': 'center',
+                'font': {'size': 20, 'color': '#2C3E50'}
+            },
+            xaxis_title="연도",
+            yaxis_title=f"{config['title']} ({config['unit']})",
+            template="plotly_white",
+            height=400,
+            hovermode='x unified',
+            font=dict(family="Arial, sans-serif", size=12),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        print(f"🔍 레이아웃 설정 성공")
+    except Exception as e:
+        print(f"❌ 레이아웃 설정 실패: {e}")
+        raise
     
     # 축 스타일 설정
-    fig.update_xaxis(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
-    fig.update_yaxis(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+    try:
+        fig.update_xaxis(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        fig.update_yaxis(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        print(f"🔍 축 스타일 설정 성공")
+    except Exception as e:
+        print(f"❌ 축 스타일 설정 실패: {e}")
+        raise
     
+    print(f"🔍 차트 생성 함수 완료!")
     return fig
 
 def create_financial_pie_chart(metrics: Dict[str, float], chart_type: str = "assets"):
