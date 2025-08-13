@@ -207,7 +207,15 @@ async def get_financial_chart(
                         value = 0
                     
                     values.append(round(value, 2))  # 소수점 2자리로 반올림
-                    print(f"🔍 {year}년 {chart_type} 값: {value} (metrics에서: {metrics.get(chart_type if chart_type in ['revenue', 'profit', 'assets', 'equity'] else 'revenue', 0)})")
+                    # chart_type에 따른 실제 metrics 키 매핑
+                    metric_key_map = {
+                        'revenue': 'revenue',
+                        'profit': 'net_income', 
+                        'assets': 'total_assets',
+                        'equity': 'total_equity'
+                    }
+                    actual_key = metric_key_map.get(chart_type, 'revenue')
+                    print(f"🔍 {year}년 {chart_type} 값: {value} (metrics[{actual_key}]: {metrics.get(actual_key, 0)})")
                     
                 except Exception as e:
                     print(f"❌ {year}년 데이터 처리 오류: {e}")
@@ -333,8 +341,8 @@ def create_financial_chart(years: List[int], values: List[float], chart_type: st
     
     # 축 스타일 설정
     try:
-        fig.update_xaxis(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
-        fig.update_yaxis(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
         print(f"🔍 축 스타일 설정 성공")
     except Exception as e:
         print(f"❌ 축 스타일 설정 실패: {e}")
