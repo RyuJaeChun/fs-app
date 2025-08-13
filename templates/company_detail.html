@@ -400,6 +400,22 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 재무상태표 박스 차트 -->
+            <div class="col-lg-6">
+                <div class="chart-container position-relative">
+                    <h4 class="section-title">
+                        <i class="fas fa-balance-scale text-success"></i> 재무상태표 구조
+                    </h4>
+                    <div id="balanceSheetBoxChart"></div>
+                    <div class="loading-overlay" id="balanceBoxLoading" style="display: none;">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>재무상태표 박스 차트를 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Error Message -->
@@ -440,6 +456,7 @@
                 
                 // 차트 데이터 로드 (배치 방식)
                 loadCharts();
+                loadBalanceSheetBox();
                 
             } catch (error) {
                 console.error('재무데이터 로드 오류:', error);
@@ -679,6 +696,58 @@
             const messageDiv = document.getElementById('globalLoadingMessage');
             if (messageDiv) {
                 messageDiv.remove();
+            }
+        }
+
+        // 재무상태표 박스 차트 로드
+        async function loadBalanceSheetBox() {
+            const baseYear = document.getElementById('baseYear').value;
+            
+            try {
+                showLoading('balanceBox');
+                console.log('📊 재무상태표 박스 차트 로딩 시작...');
+                
+                const response = await fetch(`/api/balance_sheet_box/${corpCode}?year=${baseYear}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📊 재무상태표 박스 데이터 수신:', data);
+                
+                if (data.chart) {
+                    Plotly.newPlot('balanceSheetBoxChart', data.chart.data, data.chart.layout, {
+                        responsive: true,
+                        displayModeBar: false
+                    });
+                    console.log('✅ 재무상태표 박스 차트 렌더링 완료');
+                } else {
+                    // 차트가 없는 경우 메시지 표시
+                    const chartContainer = document.getElementById('balanceSheetBoxChart');
+                    chartContainer.innerHTML = `
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            재무상태표 데이터를 찾을 수 없습니다.
+                        </div>
+                    `;
+                    console.log('⚠️ 재무상태표 박스 차트 데이터 없음');
+                }
+                
+                hideLoading('balanceBox');
+                
+            } catch (error) {
+                console.error('❌ 재무상태표 박스 차트 로드 오류:', error);
+                hideLoading('balanceBox');
+                
+                // 에러 메시지 표시
+                const chartContainer = document.getElementById('balanceSheetBoxChart');
+                chartContainer.innerHTML = `
+                    <div class="alert alert-danger text-center">
+                        <i class="fas fa-times-circle"></i>
+                        재무상태표 박스 차트 로드 실패: ${error.message}
+                    </div>
+                `;
             }
         }
 

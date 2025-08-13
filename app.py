@@ -491,6 +491,225 @@ async def explain_financial_terms():
         raise HTTPException(status_code=500, detail=f"용어 설명 실패: {str(e)}")
 
 
+def create_balance_sheet_box_chart(metrics: Dict, year: int):
+    """재무상태표 박스 차트 생성 (자산 = 부채 + 자본)"""
+    try:
+        # 데이터 추출 (억원 단위)
+        total_assets = metrics.get('total_assets', 0) / 100000000
+        total_liabilities = metrics.get('total_liabilities', 0) / 100000000  
+        total_equity = metrics.get('total_equity', 0) / 100000000
+        
+        # 유동/비유동 자산 (있는 경우)
+        current_assets = metrics.get('current_assets', 0) / 100000000
+        non_current_assets = metrics.get('non_current_assets', 0) / 100000000
+        
+        # 유동/비유동 부채 (있는 경우)
+        current_liabilities = metrics.get('current_liabilities', 0) / 100000000
+        non_current_liabilities = metrics.get('non_current_liabilities', 0) / 100000000
+        
+        # 최대값으로 정규화 (박스 높이 조절용)
+        max_value = max(total_assets, total_liabilities + total_equity)
+        if max_value == 0:
+            max_value = 1  # 0으로 나누기 방지
+        
+        # Figure 생성
+        fig = go.Figure()
+        
+        # 자산 박스 (좌측)
+        assets_height = (total_assets / max_value) * 100
+        
+        # 유동자산 (밝은 파란색)
+        if current_assets > 0:
+            current_assets_height = (current_assets / max_value) * 100
+            fig.add_trace(go.Bar(
+                x=['자산'],
+                y=[current_assets_height],
+                name='유동자산',
+                marker_color='#87CEEB',
+                text=[f'{current_assets:,.0f}억원'],
+                textposition='middle',
+                hovertemplate='유동자산<br>%{text}<extra></extra>'
+            ))
+        
+        # 비유동자산 (진한 파란색)
+        if non_current_assets > 0:
+            non_current_assets_height = (non_current_assets / max_value) * 100
+            fig.add_trace(go.Bar(
+                x=['자산'],
+                y=[non_current_assets_height],
+                name='비유동자산',
+                marker_color='#4682B4',
+                text=[f'{non_current_assets:,.0f}억원'],
+                textposition='middle',
+                base=[current_assets_height] if current_assets > 0 else [0],
+                hovertemplate='비유동자산<br>%{text}<extra></extra>'
+            ))
+        
+        # 자산이 세분화되지 않은 경우 전체 자산으로 표시
+        if current_assets == 0 and non_current_assets == 0 and total_assets > 0:
+            fig.add_trace(go.Bar(
+                x=['자산'],
+                y=[assets_height],
+                name='총자산',
+                marker_color='#4682B4',
+                text=[f'{total_assets:,.0f}억원'],
+                textposition='middle',
+                hovertemplate='총자산<br>%{text}<extra></extra>'
+            ))
+        
+        # 부채 박스 (우측 하단)
+        if total_liabilities > 0:
+            liabilities_height = (total_liabilities / max_value) * 100
+            
+            # 유동부채 (밝은 빨간색)
+            if current_liabilities > 0:
+                current_liabilities_height = (current_liabilities / max_value) * 100
+                fig.add_trace(go.Bar(
+                    x=['부채 + 자본'],
+                    y=[current_liabilities_height],
+                    name='유동부채',
+                    marker_color='#FFB6C1',
+                    text=[f'{current_liabilities:,.0f}억원'],
+                    textposition='middle',
+                    hovertemplate='유동부채<br>%{text}<extra></extra>'
+                ))
+            
+            # 비유동부채 (진한 빨간색)
+            if non_current_liabilities > 0:
+                non_current_liabilities_height = (non_current_liabilities / max_value) * 100
+                fig.add_trace(go.Bar(
+                    x=['부채 + 자본'],
+                    y=[non_current_liabilities_height],
+                    name='비유동부채',
+                    marker_color='#DC143C',
+                    text=[f'{non_current_liabilities:,.0f}억원'],
+                    textposition='middle',
+                    base=[current_liabilities_height] if current_liabilities > 0 else [0],
+                    hovertemplate='비유동부채<br>%{text}<extra></extra>'
+                ))
+            
+            # 부채가 세분화되지 않은 경우 전체 부채로 표시
+            if current_liabilities == 0 and non_current_liabilities == 0:
+                fig.add_trace(go.Bar(
+                    x=['부채 + 자본'],
+                    y=[liabilities_height],
+                    name='총부채',
+                    marker_color='#DC143C',
+                    text=[f'{total_liabilities:,.0f}억원'],
+                    textposition='middle',
+                    hovertemplate='총부채<br>%{text}<extra></extra>'
+                ))
+        
+        # 자본 박스 (우측 상단)
+        if total_equity > 0:
+            equity_height = (total_equity / max_value) * 100
+            base_height = (total_liabilities / max_value) * 100 if total_liabilities > 0 else 0
+            
+            fig.add_trace(go.Bar(
+                x=['부채 + 자본'],
+                y=[equity_height],
+                name='자본',
+                marker_color='#32CD32',
+                text=[f'{total_equity:,.0f}억원'],
+                textposition='middle',
+                base=[base_height],
+                hovertemplate='자본<br>%{text}<extra></extra>'
+            ))
+        
+        # 레이아웃 설정
+        fig.update_layout(
+            title=f'{year}년 재무상태표 구조',
+            font=dict(size=14),
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            height=500,
+            margin=dict(t=80, b=50, l=50, r=50),
+            barmode='stack',
+            xaxis=dict(
+                title="",
+                tickfont=dict(size=16, color='#2F4F4F'),
+                categoryorder='array',
+                categoryarray=['자산', '부채 + 자본']
+            ),
+            yaxis=dict(
+                title="금액 비율 (%)",
+                tickfont=dict(size=12),
+                range=[0, 105]
+            ),
+            plot_bgcolor='rgba(248,249,250,0.8)',
+            paper_bgcolor='white'
+        )
+        
+        # 등식 표시를 위한 annotation 추가
+        fig.add_annotation(
+            x=0.5,
+            y=1.08,
+            xref="paper",
+            yref="paper",
+            text=f"<b>자산 {total_assets:,.0f}억원 = 부채 {total_liabilities:,.0f}억원 + 자본 {total_equity:,.0f}억원</b>",
+            showarrow=False,
+            font=dict(size=16, color='#2F4F4F'),
+            align="center"
+        )
+        
+        return fig
+        
+    except Exception as e:
+        print(f"❌ 재무상태표 박스 차트 생성 실패: {e}")
+        raise
+
+
+@app.get("/api/balance_sheet_box/{corp_code}")
+async def get_balance_sheet_box(corp_code: str, year: int = 2023):
+    """재무상태표 박스 차트 API"""
+    if not dart_api:
+        raise HTTPException(status_code=500, detail="DART API가 초기화되지 않았습니다")
+    
+    try:
+        print(f"📊 재무상태표 박스 차트 요청: {corp_code}, {year}년")
+        
+        # 재무제표 데이터 조회
+        result = dart_api.get_financial_statements(corp_code, str(year), '11011')
+        
+        if result['status'] != '000':
+            raise HTTPException(status_code=400, detail=f"데이터 조회 실패: {result['message']}")
+        
+        # 데이터 파싱 및 지표 계산
+        parsed_data = dart_api.parse_financial_data(result.get('list', []))
+        metrics = dart_api.get_key_financial_metrics(parsed_data)
+        
+        print(f"🔍 재무상태표 지표: 자산={metrics.get('total_assets', 0)/100000000:.0f}억, "
+              f"부채={metrics.get('total_liabilities', 0)/100000000:.0f}억, "
+              f"자본={metrics.get('total_equity', 0)/100000000:.0f}억")
+        
+        # 박스 차트 생성
+        fig = create_balance_sheet_box_chart(metrics, year)
+        
+        return {
+            "chart": json.loads(fig.to_json()),
+            "metrics": {
+                "total_assets": metrics.get('total_assets', 0),
+                "total_liabilities": metrics.get('total_liabilities', 0),
+                "total_equity": metrics.get('total_equity', 0),
+                "current_assets": metrics.get('current_assets', 0),
+                "non_current_assets": metrics.get('non_current_assets', 0),
+                "current_liabilities": metrics.get('current_liabilities', 0),
+                "non_current_liabilities": metrics.get('non_current_liabilities', 0)
+            },
+            "year": year
+        }
+        
+    except Exception as e:
+        print(f"❌ 재무상태표 박스 차트 생성 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"박스 차트 생성 실패: {str(e)}")
+
+
 @app.get("/api/financial_charts_batch/{corp_code}")
 async def get_financial_charts_batch(corp_code: str, start_year: int = 2019, end_year: int = 2023, base_year: int = 2023):
     """모든 차트 데이터를 한 번에 반환"""
