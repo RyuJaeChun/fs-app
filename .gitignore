@@ -1,0 +1,97 @@
+# 파이썬
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 가상환경
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 환경변수 파일 (중요!)
+.env
+.env.local
+.env.production
+.env.staging
+
+# 데이터베이스
+*.db
+*.sqlite
+*.sqlite3
+companies.db
+
+# API 키 및 민감한 정보
+config.py
+secrets.json
+*.key
+*.pem
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS 생성 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 로그 파일
+*.log
+logs/
+
+# 임시 파일
+*.tmp
+*.temp
+temp/
+tmp/
+
+# 캐시
+.cache/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 테스트 커버리지
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# 백업 파일
+*.bak
+*.backup
+
+# 프로덕션 데이터
+data/
+uploads/
+downloads/

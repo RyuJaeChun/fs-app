@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.corp_name }} - 재무제표 시각화</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        
+        .company-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .company-info {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .metric-change {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        
+        .metric-positive {
+            color: #28a745;
+        }
+        
+        .metric-negative {
+            color: #dc3545;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            z-index: 1000;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+        }
+        
+        .btn-custom {
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .alert-custom {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-select, .form-control {
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            padding: 10px 15px;
+        }
+        
+        .form-select:focus, .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="company-title">{{ company.corp_name }}</h1>
+                    <div class="company-info">
+                        {% if company.stock_code %}
+                        종목코드: {{ company.stock_code }} | 
+                        {% endif %}
+                        고유번호: {{ company.corp_code }}
+                    </div>
+                </div>
+                <a href="/" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> 홈으로
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h3 class="section-title">
+                <i class="fas fa-cog"></i> 조회 설정
+            </h3>
+            <div class="row align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">기준연도</label>
+                    <select class="form-select" id="baseYear">
+                        <option value="2023">2023년</option>
+                        <option value="2022">2022년</option>
+                        <option value="2021">2021년</option>
+                        <option value="2020">2020년</option>
+                        <option value="2019">2019년</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">시작연도</label>
+                    <select class="form-select" id="startYear">
+                        <option value="2019">2019년</option>
+                        <option value="2020" selected>2020년</option>
+                        <option value="2021">2021년</option>
+                        <option value="2022">2022년</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">종료연도</label>
+                    <select class="form-select" id="endYear">
+                        <option value="2021">2021년</option>
+                        <option value="2022">2022년</option>
+                        <option value="2023" selected>2023년</option>
+                        <option value="2024">2024년</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">보고서</label>
+                    <select class="form-select" id="reportType">
+                        <option value="11011" selected>사업보고서</option>
+                        <option value="11013">1분기보고서</option>
+                        <option value="11012">반기보고서</option>
+                        <option value="11014">3분기보고서</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary-custom btn-custom w-100" onclick="loadFinancialData()">
+                        <i class="fas fa-sync-alt"></i> 조회
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="row" id="metricsContainer">
+            <!-- 메트릭 카드들이 여기에 동적으로 추가됩니다 -->
+        </div>
+
+        <!-- AI Analysis Section -->
+        <div class="chart-container position-relative" id="aiAnalysisSection">
+            <h3 class="section-title">
+                <i class="fas fa-robot text-primary"></i> AI 재무분석
+                <button class="btn btn-primary-custom btn-sm float-end" onclick="loadAIAnalysis()">
+                    <i class="fas fa-brain"></i> AI 분석 시작
+                </button>
+            </h3>
+            
+            <div id="aiAnalysisContent">
+                <div class="alert alert-info alert-custom">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>AI 재무분석:</strong> Gemini AI가 이 회사의 재무상태를 쉽게 설명해드립니다. 
+                    "AI 분석 시작" 버튼을 클릭하세요.
+                </div>
+            </div>
+            
+            <div class="loading-overlay" id="aiLoading" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">AI 분석 중...</span>
+                </div>
+                <div class="mt-2 text-center">
+                    <small>AI가 재무제표를 분석하고 있습니다...</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row">
+            <!-- 매출액 추이 -->
+            <div class="col-lg-6">
+                <div class="chart-container position-relative">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-line text-primary"></i> 매출액 추이
+                    </h4>
+                    <div id="revenueChart"></div>
+                    <div class="loading-overlay" id="revenueLoading" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 순이익 추이 -->
+            <div class="col-lg-6">
+                <div class="chart-container position-relative">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-line text-success"></i> 순이익 추이
+                    </h4>
+                    <div id="profitChart"></div>
+                    <div class="loading-overlay" id="profitLoading" style="display: none;">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 총자산 추이 -->
+            <div class="col-lg-6">
+                <div class="chart-container position-relative">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-area text-warning"></i> 총자산 추이
+                    </h4>
+                    <div id="assetsChart"></div>
+                    <div class="loading-overlay" id="assetsLoading" style="display: none;">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 자산 구성 (파이 차트) -->
+            <div class="col-lg-6">
+                <div class="chart-container position-relative">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-pie text-info"></i> 자산 구성
+                    </h4>
+                    <div id="assetsPieChart"></div>
+                    <div class="loading-overlay" id="pieLoading" style="display: none;">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="alert alert-danger alert-custom" id="errorMessage" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>오류 발생:</strong> <span id="errorText"></span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const corpCode = '{{ company.corp_code }}';
+        
+        // 페이지 로드시 초기 데이터 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFinancialData();
+        });
+
+        // 재무데이터 로드
+        async function loadFinancialData() {
+            const baseYear = document.getElementById('baseYear').value;
+            const reportType = document.getElementById('reportType').value;
+            
+            try {
+                hideError();
+                
+                // 기본 재무데이터 로드 (메트릭용)
+                showLoading('metrics');
+                const metricsResponse = await fetch(`/api/financial/${corpCode}?year=${baseYear}&report_type=${reportType}`);
+                const metricsData = await metricsResponse.json();
+                
+                if (metricsData.status === 'success') {
+                    displayMetrics(metricsData.metrics);
+                } else {
+                    throw new Error('메트릭 데이터 로드 실패');
+                }
+                hideLoading('metrics');
+                
+                // 차트 데이터 로드
+                loadCharts();
+                loadPieChart();
+                
+            } catch (error) {
+                console.error('재무데이터 로드 오류:', error);
+                showError('재무데이터를 불러오는데 실패했습니다: ' + error.message);
+                hideLoading('metrics');
+            }
+        }
+
+        // 차트들 로드
+        async function loadCharts() {
+            const startYear = document.getElementById('startYear').value;
+            const endYear = document.getElementById('endYear').value;
+            
+            const chartTypes = ['revenue', 'profit', 'assets'];
+            
+            for (const chartType of chartTypes) {
+                try {
+                    showLoading(chartType);
+                    
+                    const response = await fetch(
+                        `/api/financial_chart/${corpCode}?start_year=${startYear}&end_year=${endYear}&chart_type=${chartType}`
+                    );
+                    const data = await response.json();
+                    
+                    Plotly.newPlot(`${chartType}Chart`, data.chart.data, data.chart.layout, {
+                        responsive: true,
+                        displayModeBar: false
+                    });
+                    
+                    hideLoading(chartType);
+                } catch (error) {
+                    console.error(`${chartType} 차트 로드 오류:`, error);
+                    hideLoading(chartType);
+                }
+            }
+        }
+
+        // 파이 차트 로드
+        async function loadPieChart() {
+            const baseYear = document.getElementById('baseYear').value;
+            
+            try {
+                showLoading('pie');
+                
+                const response = await fetch(`/api/financial_pie/${corpCode}?year=${baseYear}`);
+                const data = await response.json();
+                
+                Plotly.newPlot('assetsPieChart', data.chart.data, data.chart.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+                
+                hideLoading('pie');
+            } catch (error) {
+                console.error('파이 차트 로드 오류:', error);
+                hideLoading('pie');
+            }
+        }
+
+        // 메트릭 표시
+        function displayMetrics(metrics) {
+            const container = document.getElementById('metricsContainer');
+            
+            const metricItems = [
+                { key: 'revenue', label: '매출액', unit: '억원', icon: 'fa-chart-line', color: 'primary' },
+                { key: 'operating_profit', label: '영업이익', unit: '억원', icon: 'fa-coins', color: 'success' },
+                { key: 'net_income', label: '순이익', unit: '억원', icon: 'fa-money-bill-wave', color: 'info' },
+                { key: 'total_assets', label: '총자산', unit: '억원', icon: 'fa-building', color: 'warning' },
+                { key: 'operating_margin', label: '영업이익률', unit: '%', icon: 'fa-percentage', color: 'secondary' },
+                { key: 'net_margin', label: '순이익률', unit: '%', icon: 'fa-percent', color: 'dark' }
+            ];
+
+            const html = metricItems.map(item => {
+                const value = metrics[item.key] || 0;
+                const formattedValue = item.unit === '%' ? 
+                    value.toFixed(1) : 
+                    (value / 100000000).toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+                return `
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <div class="metric-card">
+                            <div class="text-${item.color} mb-2">
+                                <i class="fas ${item.icon} fa-2x"></i>
+                            </div>
+                            <div class="metric-value">${formattedValue}</div>
+                            <div class="metric-label">${item.label} (${item.unit})</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        // 로딩 표시
+        function showLoading(type) {
+            const loadingElement = document.getElementById(`${type}Loading`);
+            if (loadingElement) {
+                loadingElement.style.display = 'flex';
+            }
+        }
+
+        // 로딩 숨기기
+        function hideLoading(type) {
+            const loadingElement = document.getElementById(`${type}Loading`);
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        // 에러 표시
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // 5초 후 자동 숨김
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
+
+        // 에러 숨기기
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // AI 분석 로드
+        async function loadAIAnalysis() {
+            const baseYear = document.getElementById('baseYear').value;
+            
+            try {
+                showLoading('ai');
+                
+                const response = await fetch(`/api/ai_analysis/${corpCode}?year=${baseYear}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayAIAnalysis(data);
+                } else {
+                    throw new Error(data.detail || 'AI 분석 실패');
+                }
+                
+                hideLoading('ai');
+            } catch (error) {
+                console.error('AI 분석 오류:', error);
+                showError('AI 분석 중 오류가 발생했습니다: ' + error.message);
+                hideLoading('ai');
+            }
+        }
+
+        // AI 분석 결과 표시
+        function displayAIAnalysis(data) {
+            const container = document.getElementById('aiAnalysisContent');
+            
+            const analysis = data.analysis;
+            const metrics = data.metrics;
+            
+            const html = `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-success alert-custom mb-4">
+                            <h5><i class="fas fa-lightbulb"></i> AI 분석 요약</h5>
+                            <p class="mb-0">${analysis.summary}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-thumbs-up"></i> 재무적 강점</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${analysis.strengths}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> 주의사항</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${analysis.concerns}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-line"></i> 투자 의견</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${analysis.recommendation}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="alert alert-light alert-custom">
+                            <h6><i class="fas fa-calculator"></i> 핵심 지표 (${data.analysis_year}년 기준)</h6>
+                            <div class="row text-center">
+                                <div class="col">
+                                    <strong>매출액</strong><br>
+                                    <span class="text-primary">${metrics.revenue_billions}조원</span>
+                                </div>
+                                <div class="col">
+                                    <strong>순이익</strong><br>
+                                    <span class="text-success">${metrics.profit_billions}조원</span>
+                                </div>
+                                <div class="col">
+                                    <strong>총자산</strong><br>
+                                    <span class="text-info">${metrics.assets_billions}조원</span>
+                                </div>
+                                <div class="col">
+                                    <strong>영업이익률</strong><br>
+                                    <span class="text-warning">${metrics.operating_margin}%</span>
+                                </div>
+                                <div class="col">
+                                    <strong>ROE</strong><br>
+                                    <span class="text-danger">${metrics.roe}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="fas fa-robot"></i> 이 분석은 Gemini AI가 재무제표 데이터를 바탕으로 생성한 것입니다. 
+                            투자 결정시에는 추가적인 정보와 전문가의 조언을 참고하시기 바랍니다.
+                        </small>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 숫자 포맷팅
+        function formatNumber(num, unit = '') {
+            if (unit === '%') {
+                return num.toFixed(1);
+            }
+            return (num / 100000000).toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: fs-project
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 10000
+    # 환경변수는 Render 대시보드에서 설정:
+    # DART_API_KEY=your_dart_api_key
+    # GEMINI_API_KEY=your_gemini_api_key (선택사항)
+
+  # PostgreSQL 데이터베이스 (선택사항)
+  - type: pserv
+    name: fs-project-db
+    env: postgres
+    plan: free
+    databaseName: fs_project_db
+    databaseUser: fs_project_user
