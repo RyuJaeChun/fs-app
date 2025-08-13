@@ -21,7 +21,9 @@ from financial_analyzer import FinancialAnalyzer
 app = FastAPI(title="재무제표 시각화", description="DART API를 활용한 재무제표 시각화 웹앱")
 
 # 정적 파일 및 템플릿 설정
-app.mount("/static", StaticFiles(directory="static"), name="static")
+import os
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # 전역 객체 초기화
