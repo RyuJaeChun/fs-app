@@ -438,9 +438,8 @@
                 }
                 hideLoading('metrics');
                 
-                // 차트 데이터 로드
+                // 차트 데이터 로드 (배치 방식)
                 loadCharts();
-                loadPieChart();
                 
             } catch (error) {
                 console.error('재무데이터 로드 오류:', error);
@@ -449,56 +448,134 @@
             }
         }
 
-        // 차트들 로드
+        // 차트들 로드 (배치 방식)
         async function loadCharts() {
             const startYear = document.getElementById('startYear').value;
             const endYear = document.getElementById('endYear').value;
+            const baseYear = document.getElementById('baseYear').value;
             
+            // 모든 차트에 로딩 표시
             const chartTypes = ['revenue', 'profit', 'assets'];
+            chartTypes.forEach(chartType => showLoading(chartType));
+            showLoading('pie');
             
-            for (const chartType of chartTypes) {
-                try {
-                    showLoading(chartType);
-                    
-                    const response = await fetch(
-                        `/api/financial_chart/${corpCode}?start_year=${startYear}&end_year=${endYear}&chart_type=${chartType}`
-                    );
-                    const data = await response.json();
-                    
-                    Plotly.newPlot(`${chartType}Chart`, data.chart.data, data.chart.layout, {
-                        responsive: true,
-                        displayModeBar: false
-                    });
-                    
-                    hideLoading(chartType);
-                } catch (error) {
-                    console.error(`${chartType} 차트 로드 오류:`, error);
-                    hideLoading(chartType);
+            try {
+                console.log('📊 배치 차트 로딩 시작...');
+                
+                // 전체 로딩 상태 표시
+                showGlobalLoadingMessage('모든 차트 데이터를 불러오는 중...');
+                
+                // 배치 API 호출
+                const response = await fetch(
+                    `/api/financial_charts_batch/${corpCode}?start_year=${startYear}&end_year=${endYear}&base_year=${baseYear}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                
+                const data = await response.json();
+                console.log('📊 배치 데이터 수신:', data);
+                
+                // 라인 차트들 처리
+                for (const chartType of chartTypes) {
+                    try {
+                        const chartData = data.line_charts[chartType];
+                        
+                        if (chartData && chartData.chart) {
+                            Plotly.newPlot(`${chartType}Chart`, chartData.chart.data, chartData.chart.layout, {
+                                responsive: true,
+                                displayModeBar: false
+                            });
+                            console.log(`✅ ${chartType} 차트 렌더링 완료`);
+                        } else {
+                            // 차트가 없는 경우 메시지 표시
+                            const chartContainer = document.getElementById(`${chartType}Chart`);
+                            chartContainer.innerHTML = `
+                                <div class="alert alert-warning text-center">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    ${chartData?.message || `${chartType} 데이터를 찾을 수 없습니다.`}
+                                </div>
+                            `;
+                            console.log(`⚠️ ${chartType} 차트 데이터 없음`);
+                        }
+                        
+                        hideLoading(chartType);
+                    } catch (error) {
+                        console.error(`❌ ${chartType} 차트 렌더링 오류:`, error);
+                        hideLoading(chartType);
+                        
+                        // 에러 메시지 표시
+                        const chartContainer = document.getElementById(`${chartType}Chart`);
+                        chartContainer.innerHTML = `
+                            <div class="alert alert-danger text-center">
+                                <i class="fas fa-times-circle"></i>
+                                ${chartType} 차트 로드 실패
+                            </div>
+                        `;
+                    }
+                }
+                
+                // 파이 차트 처리
+                try {
+                    const pieData = data.pie_chart;
+                    
+                    if (pieData && pieData.chart) {
+                        Plotly.newPlot('assetsPieChart', pieData.chart.data, pieData.chart.layout, {
+                            responsive: true,
+                            displayModeBar: false
+                        });
+                        console.log('✅ 파이 차트 렌더링 완료');
+                    } else {
+                        // 파이 차트가 없는 경우 메시지 표시
+                        const pieContainer = document.getElementById('assetsPieChart');
+                        pieContainer.innerHTML = `
+                            <div class="alert alert-warning text-center">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                ${pieData?.message || '자산 구성 데이터를 찾을 수 없습니다.'}
+                            </div>
+                        `;
+                        console.log('⚠️ 파이 차트 데이터 없음');
+                    }
+                    
+                    hideLoading('pie');
+                } catch (error) {
+                    console.error('❌ 파이 차트 렌더링 오류:', error);
+                    hideLoading('pie');
+                    
+                    // 에러 메시지 표시
+                    const pieContainer = document.getElementById('assetsPieChart');
+                    pieContainer.innerHTML = `
+                        <div class="alert alert-danger text-center">
+                            <i class="fas fa-times-circle"></i>
+                            자산 구성 차트 로드 실패
+                        </div>
+                    `;
+                }
+                
+                console.log('✅ 모든 차트 로딩 완료!');
+                hideGlobalLoadingMessage();
+                
+            } catch (error) {
+                console.error('❌ 배치 차트 로드 전체 실패:', error);
+                
+                // 모든 차트에 에러 메시지 표시
+                [...chartTypes, 'pie'].forEach(type => {
+                    hideLoading(type === 'pie' ? 'pie' : type);
+                    const containerId = type === 'pie' ? 'assetsPieChart' : `${type}Chart`;
+                    const container = document.getElementById(containerId);
+                    container.innerHTML = `
+                        <div class="alert alert-danger text-center">
+                            <i class="fas fa-times-circle"></i>
+                            차트 로드 실패: ${error.message}
+                        </div>
+                    `;
+                });
+                hideGlobalLoadingMessage();
             }
         }
 
-        // 파이 차트 로드
-        async function loadPieChart() {
-            const baseYear = document.getElementById('baseYear').value;
-            
-            try {
-                showLoading('pie');
-                
-                const response = await fetch(`/api/financial_pie/${corpCode}?year=${baseYear}`);
-                const data = await response.json();
-                
-                Plotly.newPlot('assetsPieChart', data.chart.data, data.chart.layout, {
-                    responsive: true,
-                    displayModeBar: false
-                });
-                
-                hideLoading('pie');
-            } catch (error) {
-                console.error('파이 차트 로드 오류:', error);
-                hideLoading('pie');
-            }
-        }
+
 
         // 메트릭 표시
         function displayMetrics(metrics) {
@@ -567,6 +644,42 @@
         // 에러 숨기기
         function hideError() {
             document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // 전역 로딩 메시지 표시
+        function showGlobalLoadingMessage(message) {
+            // 기존 전역 메시지가 있으면 제거
+            const existingMessage = document.getElementById('globalLoadingMessage');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // 새 메시지 생성
+            const messageDiv = document.createElement('div');
+            messageDiv.id = 'globalLoadingMessage';
+            messageDiv.className = 'alert alert-info text-center mb-4';
+            messageDiv.innerHTML = `
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            // 차트 섹션 앞에 삽입
+            const chartsSection = document.querySelector('.charts-section');
+            if (chartsSection) {
+                chartsSection.parentNode.insertBefore(messageDiv, chartsSection);
+            }
+        }
+
+        // 전역 로딩 메시지 숨기기
+        function hideGlobalLoadingMessage() {
+            const messageDiv = document.getElementById('globalLoadingMessage');
+            if (messageDiv) {
+                messageDiv.remove();
+            }
         }
 
         // AI 분석 로드

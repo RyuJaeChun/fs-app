@@ -488,6 +488,133 @@ async def explain_financial_terms():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"용어 설명 실패: {str(e)}")
 
+
+@app.get("/api/financial_charts_batch/{corp_code}")
+async def get_financial_charts_batch(corp_code: str, start_year: int = 2019, end_year: int = 2023, base_year: int = 2023):
+    """모든 차트 데이터를 한 번에 반환"""
+    if not dart_api:
+        raise HTTPException(status_code=500, detail="DART API가 초기화되지 않았습니다")
+    
+    try:
+        print(f"📊 배치 차트 요청: {corp_code}, {start_year}-{end_year}년, 파이차트: {base_year}년")
+        
+        # 결과를 저장할 딕셔너리
+        result = {
+            "line_charts": {},
+            "pie_chart": None,
+            "success": True,
+            "message": "모든 차트 데이터를 성공적으로 로드했습니다."
+        }
+        
+        # 라인 차트들 (매출액, 순이익, 총자산)
+        chart_types = ['revenue', 'profit', 'assets']
+        
+        for chart_type in chart_types:
+            try:
+                print(f"🔍 {chart_type} 차트 생성 중...")
+                
+                years = []
+                values = []
+                
+                # 연도별 데이터 수집
+                for year in range(start_year, end_year + 1):
+                    try:
+                        # 재무제표 데이터 조회
+                        financial_result = dart_api.get_financial_statements(corp_code, str(year), '11011')
+                        
+                        if financial_result['status'] == '000' and financial_result.get('list'):
+                            # 데이터 파싱 및 지표 계산
+                            parsed_data = dart_api.parse_financial_data(financial_result.get('list', []))
+                            metrics = dart_api.get_key_financial_metrics(parsed_data)
+                            
+                            years.append(year)
+                            
+                            # 차트 타입에 따른 값 선택 (억원 단위)
+                            if chart_type == "revenue":
+                                value = safe_convert(metrics.get('revenue', 0)) / 100000000
+                            elif chart_type == "profit":
+                                value = safe_convert(metrics.get('net_income', 0)) / 100000000
+                            elif chart_type == "assets":
+                                value = safe_convert(metrics.get('total_assets', 0)) / 100000000
+                            else:
+                                value = 0
+                            
+                            values.append(round(value, 2))
+                            print(f"✅ {year}년 {chart_type}: {value}억원")
+                            
+                    except Exception as e:
+                        print(f"❌ {year}년 {chart_type} 데이터 처리 오류: {e}")
+                        continue
+                
+                # 데이터가 있으면 차트 생성
+                if years and values and not all(v == 0 for v in values):
+                    fig = create_financial_chart(years, values, chart_type)
+                    result["line_charts"][chart_type] = {
+                        "chart": json.loads(fig.to_json()),
+                        "years": years,
+                        "values": values
+                    }
+                    print(f"✅ {chart_type} 차트 생성 완료")
+                else:
+                    result["line_charts"][chart_type] = {
+                        "chart": None,
+                        "message": f"{chart_type} 데이터를 찾을 수 없습니다."
+                    }
+                    print(f"❌ {chart_type} 데이터 없음")
+                    
+            except Exception as e:
+                print(f"❌ {chart_type} 차트 생성 실패: {e}")
+                result["line_charts"][chart_type] = {
+                    "chart": None,
+                    "message": f"{chart_type} 차트 생성 중 오류가 발생했습니다."
+                }
+        
+        # 파이 차트 (자산 구성)
+        try:
+            print(f"🥧 파이 차트 생성 중... ({base_year}년)")
+            
+            # 재무제표 데이터 조회
+            financial_result = dart_api.get_financial_statements(corp_code, str(base_year), '11011')
+            
+            if financial_result['status'] == '000' and financial_result.get('list'):
+                # 데이터 파싱 및 지표 계산
+                parsed_data = dart_api.parse_financial_data(financial_result.get('list', []))
+                metrics = dart_api.get_key_financial_metrics(parsed_data)
+                
+                # 억원 단위로 변환
+                for key in ['total_assets', 'total_liabilities', 'total_equity']:
+                    metrics[key] = metrics[key] / 100000000
+                
+                # 파이 차트 생성
+                fig = create_financial_pie_chart(metrics, "assets")
+                
+                result["pie_chart"] = {
+                    "chart": json.loads(fig.to_json()),
+                    "metrics": metrics
+                }
+                print(f"✅ 파이 차트 생성 완료")
+            else:
+                result["pie_chart"] = {
+                    "chart": None, 
+                    "message": "자산 구성 데이터를 찾을 수 없습니다."
+                }
+                print(f"❌ 파이 차트 데이터 없음")
+                
+        except Exception as e:
+            print(f"❌ 파이 차트 생성 실패: {e}")
+            result["pie_chart"] = {
+                "chart": None, 
+                "message": "파이 차트 생성 중 오류가 발생했습니다."
+            }
+        
+        print(f"✅ 배치 차트 생성 완료!")
+        return result
+        
+    except Exception as e:
+        print(f"❌ 배치 차트 생성 전체 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"차트 생성 중 오류가 발생했습니다: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     import os
