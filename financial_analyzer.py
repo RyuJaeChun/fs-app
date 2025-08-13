@@ -51,7 +51,7 @@ class FinancialAnalyzer:
             analysis_text = response.text
             
             # 결과를 섹션별로 파싱
-            parsed_analysis = self._parse_analysis_result(analysis_text)
+            parsed_analysis = self._parse_analysis_result(analysis_text, company_name, financial_metrics)
             
             return parsed_analysis
             
@@ -89,21 +89,21 @@ class FinancialAnalyzer:
 - 순이익률: {metrics.get('net_margin', 0):.1f}%
 - 자기자본이익률(ROE): {metrics.get('roe', 0):.1f}%
 
-다음 형식으로 분석해주세요:
+다음 형식을 정확히 지켜서 분석해주세요:
 
 ### 한줄요약
-[회사의 재무상태를 한 문장으로 요약]
+이 회사의 재무상태를 한 문장으로 요약해주세요.
 
 ### 강점
-[이 회사의 재무적 강점들을 쉽게 설명]
+이 회사의 재무적 강점들을 구체적인 숫자와 함께 설명해주세요.
 
-### 주의점  
-[투자자가 주의해야 할 재무적 위험요소들]
+### 주의점
+투자자가 주의해야 할 재무적 위험요소들을 설명해주세요.
 
 ### 투자의견
-[일반 투자자를 위한 쉬운 투자 조언]
+일반 투자자를 위한 구체적인 투자 조언을 제공해주세요.
 
-각 섹션은 일반인도 이해할 수 있는 쉬운 용어로 설명하고, 구체적인 숫자를 인용하여 설명해주세요.
+**중요**: 각 섹션 제목(### 한줄요약, ### 강점, ### 주의점, ### 투자의견)을 정확히 사용하고, 각 섹션에는 반드시 실질적인 내용을 포함해주세요.
 """
 
         # 다년도 데이터가 있으면 추가
@@ -112,7 +112,7 @@ class FinancialAnalyzer:
         
         return prompt
     
-    def _parse_analysis_result(self, analysis_text: str) -> Dict[str, str]:
+    def _parse_analysis_result(self, analysis_text: str, company_name: str = "", financial_metrics: Dict[str, Any] = None) -> Dict[str, str]:
         """AI 분석 결과를 섹션별로 파싱"""
         
         sections = {
@@ -130,28 +130,41 @@ class FinancialAnalyzer:
             for line in lines:
                 line = line.strip()
                 
-                if '한줄요약' in line or '요약' in line:
+                # 섹션 헤더 감지 (정확한 매칭)
+                line_lower = line.lower().strip()
+                if '### 한줄요약' in line or '한줄요약' in line_lower:
                     current_section = "summary"
-                elif '강점' in line:
+                elif '### 강점' in line or (line_lower.startswith('강점') and len(line_lower) < 10):
                     current_section = "strengths"
-                elif '주의점' in line or '위험' in line or '우려' in line:
-                    current_section = "concerns"
-                elif '투자의견' in line or '추천' in line or '조언' in line:
+                elif '### 주의점' in line or (line_lower.startswith('주의') and len(line_lower) < 10):
+                    current_section = "concerns" 
+                elif '### 투자의견' in line or (line_lower.startswith('투자') and len(line_lower) < 10):
                     current_section = "recommendation"
-                elif line and current_section and not line.startswith('#'):
-                    # 내용 추가
+                elif line and current_section and not line.startswith('#') and not line.startswith('###'):
+                    # 내용 추가 (헤더가 아닌 실제 내용만)
                     if sections[current_section]:
-                        sections[current_section] += "\n"
+                        sections[current_section] += " "
                     sections[current_section] += line
             
-            # 빈 섹션들 기본값 설정
+            # 빈 섹션들 임시 기본값 설정 (파싱 실패시)
             if not sections["summary"]:
-                sections["summary"] = "재무제표 분석 결과입니다."
-            if not sections["strengths"]:
+                sections["summary"] = f"{company_name}의 재무제표 분석 결과입니다." if company_name else "재무제표 분석 결과입니다."
+            if not sections["strengths"] and financial_metrics:
+                # 매출액과 순이익 기반 간단한 강점 생성
+                revenue_b = financial_metrics.get('revenue', 0) / 100000000
+                profit_b = financial_metrics.get('net_income', 0) / 100000000
+                sections["strengths"] = f"매출액 {revenue_b:,.0f}억원, 순이익 {profit_b:,.0f}억원을 기록하여 안정적인 수익 구조를 보여주고 있습니다."
+            elif not sections["strengths"]:
                 sections["strengths"] = "재무적 강점을 분석 중입니다."
-            if not sections["concerns"]:
+            if not sections["concerns"] and financial_metrics:
+                debt_ratio = financial_metrics.get('debt_ratio', 0)
+                sections["concerns"] = f"부채비율이 {debt_ratio:.1f}%로 재무 구조를 지속적으로 모니터링할 필요가 있습니다."
+            elif not sections["concerns"]:
                 sections["concerns"] = "주의사항을 검토 중입니다."
-            if not sections["recommendation"]:
+            if not sections["recommendation"] and financial_metrics:
+                roe = financial_metrics.get('roe', 0)
+                sections["recommendation"] = f"자기자본이익률(ROE) {roe:.1f}%를 바탕으로 투자 가치를 신중히 검토해보시기 바랍니다."
+            elif not sections["recommendation"]:
                 sections["recommendation"] = "투자 조언을 준비 중입니다."
                 
         except Exception as e:

@@ -602,10 +602,10 @@
             const container = document.getElementById('metricsContainer');
             
             const metricItems = [
-                { key: 'revenue', label: '매출액', unit: '억원', icon: 'fa-chart-line', color: 'primary' },
-                { key: 'operating_profit', label: '영업이익', unit: '억원', icon: 'fa-coins', color: 'success' },
-                { key: 'net_income', label: '순이익', unit: '억원', icon: 'fa-money-bill-wave', color: 'info' },
-                { key: 'total_assets', label: '총자산', unit: '억원', icon: 'fa-building', color: 'warning' },
+                { key: 'revenue', label: '매출액', unit: '조원', icon: 'fa-chart-line', color: 'primary' },
+                { key: 'operating_profit', label: '영업이익', unit: '조원', icon: 'fa-coins', color: 'success' },
+                { key: 'net_income', label: '순이익', unit: '조원', icon: 'fa-money-bill-wave', color: 'info' },
+                { key: 'total_assets', label: '총자산', unit: '조원', icon: 'fa-building', color: 'warning' },
                 { key: 'operating_margin', label: '영업이익률', unit: '%', icon: 'fa-percentage', color: 'secondary' },
                 { key: 'net_margin', label: '순이익률', unit: '%', icon: 'fa-percent', color: 'dark' }
             ];
@@ -614,7 +614,7 @@
                 const value = metrics[item.key] || 0;
                 const formattedValue = item.unit === '%' ? 
                     value.toFixed(1) : 
-                    (value / 100000000).toLocaleString(undefined, { maximumFractionDigits: 0 });
+                    (value / 10000000000000).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
                 return `
                     <div class="col-lg-2 col-md-4 col-sm-6">
@@ -786,77 +786,85 @@
             const metrics = data.metrics;
             
             const html = `
-                <div class="row">
+                <!-- AI 분석 요약 -->
+                <div class="row mb-4">
                     <div class="col-12">
-                        <div class="alert alert-success alert-custom mb-4">
-                            <h5><i class="fas fa-lightbulb"></i> AI 분석 요약</h5>
-                            <p class="mb-0">${analysis.summary}</p>
+                        <div class="alert alert-primary alert-custom">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-robot fa-2x text-primary"></i>
+                                </div>
+                                <div>
+                                    <h5 class="alert-heading mb-2">
+                                        <i class="fas fa-lightbulb"></i> AI 재무분석 요약
+                                    </h5>
+                                    <p class="mb-0 fs-6">${analysis.summary}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card border-success">
+                <!-- 3개 컬럼 분석 카드 -->
+                <div class="row mb-4">
+                    <div class="col-lg-4 mb-3">
+                        <div class="card h-100 border-success shadow-sm">
                             <div class="card-header bg-success text-white">
-                                <h6 class="mb-0"><i class="fas fa-thumbs-up"></i> 재무적 강점</h6>
+                                <h6 class="mb-0">
+                                    <i class="fas fa-thumbs-up me-2"></i>재무적 강점
+                                </h6>
                             </div>
                             <div class="card-body">
+                                <div class="text-success mb-2">
+                                    <i class="fas fa-check-circle fa-lg"></i>
+                                </div>
                                 <p class="card-text">${analysis.strengths}</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="col-md-4">
-                        <div class="card border-warning">
+                    <div class="col-lg-4 mb-3">
+                        <div class="card h-100 border-warning shadow-sm">
                             <div class="card-header bg-warning text-dark">
-                                <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> 주의사항</h6>
+                                <h6 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>주의사항
+                                </h6>
                             </div>
                             <div class="card-body">
+                                <div class="text-warning mb-2">
+                                    <i class="fas fa-shield-alt fa-lg"></i>
+                                </div>
                                 <p class="card-text">${analysis.concerns}</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="col-md-4">
-                        <div class="card border-primary">
+                    <div class="col-lg-4 mb-3">
+                        <div class="card h-100 border-primary shadow-sm">
                             <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0"><i class="fas fa-chart-line"></i> 투자 의견</h6>
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>투자 의견
+                                </h6>
                             </div>
                             <div class="card-body">
+                                <div class="text-primary mb-2">
+                                    <i class="fas fa-bullseye fa-lg"></i>
+                                </div>
                                 <p class="card-text">${analysis.recommendation}</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="alert alert-light alert-custom">
-                            <h6><i class="fas fa-calculator"></i> 핵심 지표 (${data.analysis_year}년 기준)</h6>
-                            <div class="row text-center">
-                                <div class="col">
-                                    <strong>매출액</strong><br>
-                                    <span class="text-primary">${metrics.revenue_billions}조원</span>
-                                </div>
-                                <div class="col">
-                                    <strong>순이익</strong><br>
-                                    <span class="text-success">${metrics.profit_billions}조원</span>
-                                </div>
-                                <div class="col">
-                                    <strong>총자산</strong><br>
-                                    <span class="text-info">${metrics.assets_billions}조원</span>
-                                </div>
-                                <div class="col">
-                                    <strong>영업이익률</strong><br>
-                                    <span class="text-warning">${metrics.operating_margin}%</span>
-                                </div>
-                                <div class="col">
-                                    <strong>ROE</strong><br>
-                                    <span class="text-danger">${metrics.roe}%</span>
-                                </div>
-                            </div>
-                        </div>
+
+                
+                <!-- 분석 완료 시간 표시 -->
+                <div class="row mt-3">
+                    <div class="col-12 text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            분석 완료: ${new Date().toLocaleString('ko-KR')}
+                        </small>
                     </div>
                 </div>
                 
@@ -878,7 +886,7 @@
             if (unit === '%') {
                 return num.toFixed(1);
             }
-            return (num / 100000000).toLocaleString(undefined, { maximumFractionDigits: 0 });
+            return (num / 10000000000000).toLocaleString(undefined, { maximumFractionDigits: 1 });
         }
     </script>
 </body>
