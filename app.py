@@ -26,6 +26,13 @@ if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# 안전한 숫자 변환 함수
+def safe_convert(value, default=0):
+    try:
+        return float(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+
 # 전역 객체 초기화
 try:
     dart_api = DartAPI()
@@ -185,12 +192,7 @@ async def get_financial_chart(
                     metrics = dart_api.get_key_financial_metrics(parsed)
                     print(f"🔍 {year}년 지표 계산 완료. metrics: {list(metrics.keys())}")
                     
-                    # 안전한 숫자 변환 함수
-                    def safe_convert(value, default=0):
-                        try:
-                            return float(value) if value is not None else default
-                        except (ValueError, TypeError):
-                            return default
+
                     
                     years.append(int(year))
                     
