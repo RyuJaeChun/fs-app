@@ -30,6 +30,18 @@ templates = Jinja2Templates(directory="templates")
 try:
     dart_api = DartAPI()
     company_db = CompanyDatabase()
+    
+    # 데이터베이스가 비어있으면 JSON에서 로드
+    if company_db.get_company_count() == 0:
+        print("📂 데이터베이스가 비어있어 JSON에서 로드합니다...")
+        try:
+            company_db.load_from_json("corpCodes.json")
+            print("✅ 회사 데이터 로드 완료")
+        except FileNotFoundError:
+            print("❌ corpCodes.json 파일을 찾을 수 없습니다.")
+        except Exception as e:
+            print(f"❌ 데이터 로드 실패: {e}")
+    
     print("✅ API 및 데이터베이스 초기화 완료")
     
     # AI 분석기 초기화 (선택사항)
