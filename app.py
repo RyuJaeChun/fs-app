@@ -161,6 +161,16 @@ async def get_financial_chart(
             corp_code, start_year, end_year, '11011'
         )
         
+        # 디버깅: 실제 응답 데이터 확인
+        print(f"🔍 디버깅 - corp_code: {corp_code}, 연도: {start_year}-{end_year}")
+        print(f"🔍 multi_year_data keys: {list(multi_year_data.keys())}")
+        
+        for year, data in multi_year_data.items():
+            print(f"🔍 {year}년 데이터 길이: {len(data) if data else 0}")
+            if data and len(data) > 0:
+                print(f"🔍 {year}년 첫 번째 항목: {data[0]}")
+                break
+        
         # 연도별 지표 추출
         years = []
         values = []
@@ -168,8 +178,12 @@ async def get_financial_chart(
         for year, data in multi_year_data.items():
             if data:  # 데이터가 있는 경우만
                 try:
+                    print(f"🔍 {year}년 데이터 파싱 시작...")
                     parsed = dart_api.parse_financial_data(data)
+                    print(f"🔍 {year}년 파싱 완료. parsed keys: {list(parsed.keys())}")
+                    
                     metrics = dart_api.get_key_financial_metrics(parsed)
+                    print(f"🔍 {year}년 지표 계산 완료. metrics: {list(metrics.keys())}")
                     
                     # 안전한 숫자 변환 함수
                     def safe_convert(value, default=0):
@@ -195,7 +209,10 @@ async def get_financial_chart(
                     values.append(round(value, 2))  # 소수점 2자리로 반올림
                     
                 except Exception as e:
-                    print(f"{year}년 데이터 처리 오류: {e}")
+                    print(f"❌ {year}년 데이터 처리 오류: {e}")
+                    print(f"❌ 에러 타입: {type(e).__name__}")
+                    import traceback
+                    print(f"❌ 상세 에러: {traceback.format_exc()}")
                     # 에러가 발생해도 연도는 추가하되 값은 0으로
                     years.append(int(year))
                     values.append(0)
