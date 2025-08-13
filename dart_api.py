@@ -296,6 +296,14 @@ class DartAPI:
         total_equity = get_amount(bs_data, ['자본총계', '총자본', '자본금'])
         total_liabilities = get_amount(bs_data, ['부채총계', '총부채'])
         
+        # 유동/비유동 자산
+        current_assets = get_amount(bs_data, ['유동자산'])
+        non_current_assets = get_amount(bs_data, ['비유동자산'])
+        
+        # 유동/비유동 부채
+        current_liabilities = get_amount(bs_data, ['유동부채'])
+        non_current_liabilities = get_amount(bs_data, ['비유동부채'])
+        
         # 손익계산서 주요 항목  
         revenue = get_amount(is_data, ['매출액', '영업수익', '수익(매출액)'])
         operating_profit = get_amount(is_data, ['영업이익'])
@@ -306,6 +314,10 @@ class DartAPI:
             'total_assets': total_assets,
             'total_equity': total_equity, 
             'total_liabilities': total_liabilities,
+            'current_assets': current_assets,
+            'non_current_assets': non_current_assets,
+            'current_liabilities': current_liabilities,
+            'non_current_liabilities': non_current_liabilities,
             'revenue': revenue,
             'operating_profit': operating_profit,
             'net_income': net_income,
@@ -313,7 +325,8 @@ class DartAPI:
             'equity_ratio': round((total_equity / total_assets * 100), 2) if total_assets > 0 else 0,
             'operating_margin': round((operating_profit / revenue * 100), 2) if revenue > 0 else 0,
             'net_margin': round((net_income / revenue * 100), 2) if revenue > 0 else 0,
-            'roe': round((net_income / total_equity * 100), 2) if total_equity > 0 else 0
+            'roe': round((net_income / total_equity * 100), 2) if total_equity > 0 else 0,
+            'current_ratio': round((current_assets / current_liabilities), 2) if current_liabilities > 0 else 0
         }
         
         return metrics
