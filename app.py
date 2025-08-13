@@ -167,22 +167,47 @@ async def get_financial_chart(
         
         for year, data in multi_year_data.items():
             if data:  # 데이터가 있는 경우만
-                parsed = dart_api.parse_financial_data(data)
-                metrics = dart_api.get_key_financial_metrics(parsed)
-                
-                years.append(int(year))
-                
-                # 차트 타입에 따른 값 선택
-                if chart_type == "revenue":
-                    values.append(metrics['revenue'] / 100000000)  # 억원 단위
-                elif chart_type == "profit":
-                    values.append(metrics['net_income'] / 100000000)
-                elif chart_type == "assets":
-                    values.append(metrics['total_assets'] / 100000000)
-                elif chart_type == "equity":
-                    values.append(metrics['total_equity'] / 100000000)
-                else:
+                try:
+                    parsed = dart_api.parse_financial_data(data)
+                    metrics = dart_api.get_key_financial_metrics(parsed)
+                    
+                    # 안전한 숫자 변환 함수
+                    def safe_convert(value, default=0):
+                        try:
+                            return float(value) if value is not None else default
+                        except (ValueError, TypeError):
+                            return default
+                    
+                    years.append(int(year))
+                    
+                    # 차트 타입에 따른 값 선택 (안전한 변환)
+                    if chart_type == "revenue":
+                        value = safe_convert(metrics.get('revenue', 0)) / 100000000
+                    elif chart_type == "profit":
+                        value = safe_convert(metrics.get('net_income', 0)) / 100000000
+                    elif chart_type == "assets":
+                        value = safe_convert(metrics.get('total_assets', 0)) / 100000000
+                    elif chart_type == "equity":
+                        value = safe_convert(metrics.get('total_equity', 0)) / 100000000
+                    else:
+                        value = 0
+                    
+                    values.append(round(value, 2))  # 소수점 2자리로 반올림
+                    
+                except Exception as e:
+                    print(f"{year}년 데이터 처리 오류: {e}")
+                    # 에러가 발생해도 연도는 추가하되 값은 0으로
+                    years.append(int(year))
                     values.append(0)
+        
+        # 데이터가 없는 경우 처리
+        if not years or all(v == 0 for v in values):
+            return {
+                "chart": None,
+                "years": [],
+                "values": [],
+                "message": "해당 기간의 재무데이터를 찾을 수 없습니다."
+            }
         
         # 차트 생성
         fig = create_financial_chart(years, values, chart_type)
@@ -190,7 +215,8 @@ async def get_financial_chart(
         return {
             "chart": json.loads(fig.to_json()),
             "years": years,
-            "values": values
+            "values": values,
+            "message": "성공"
         }
         
     except Exception as e:
