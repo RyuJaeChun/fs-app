@@ -1,241 +1,241 @@
-# DART Open API 공시검색 프로젝트
+# 📊 재무제표 시각화 웹 애플리케이션
 
-한국 금융감독원의 DART(Data Analysis, Retrieval and Transfer System) Open API를 사용하여 상장회사의 공시 정보를 검색하고 다운로드하는 Python 프로젝트입니다.
+DART Open API를 활용한 상장회사 재무제표 분석 및 시각화 웹 서비스입니다.
 
-## 📋 기능
+## 🌟 주요 기능
 
-- 🔍 **공시 검색**: 다양한 조건으로 공시 정보 검색
-- 💾 **다양한 저장 형식**: CSV, JSON, Excel 형태로 데이터 저장
-- 📊 **데이터 분석**: pandas DataFrame으로 데이터 처리
-- 🏢 **회사별 검색**: 특정 회사의 공시만 검색
-- 📅 **기간별 검색**: 원하는 기간의 공시 검색
-- 🏛️ **시장별 검색**: 유가증권시장, 코스닥시장 등 시장별 검색
-- 📂 **회사 코드 다운로드**: 전체 상장회사 고유번호 및 정보 다운로드
-- 🔎 **회사명 검색**: 회사명으로 고유번호 및 종목코드 검색
+### 📈 차트 시각화
+- **매출액 추이**: 연도별 매출 성장률 분석
+- **순이익 추이**: 수익성 변화 추적  
+- **총자산 추이**: 자산 규모 변화 분석
+- **자산 구성**: 파이차트로 자산 포트폴리오 시각화
+- **재무상태표 구조**: 좌우 분할 박스 차트로 자산 = 부채 + 자본 시각화
 
-## 📦 설치
+### 💰 핵심 재무지표
+- **수익성 지표**: 영업이익률, 순이익률, ROE
+- **재무안정성**: 부채비율, 자기자본비율
+- **유동성 분석**: 유동자산/비유동자산, 유동부채/비유동부채 구분
 
-1. **저장소 클론 및 의존성 설치**
+### 🎨 사용자 경험
+- **반응형 디자인**: 모바일, 태블릿, 데스크톱 최적화
+- **배치 차트 로딩**: 한 번의 API 호출로 모든 차트 데이터 로드
+- **실시간 데이터**: DART Open API를 통한 최신 공시 정보
+
+## 🚀 라이브 데모
+
+**🌐 배포된 서비스**: https://fs-app-tmbv.onrender.com/
+
+### 샘플 기업 링크
+- [삼성전자](https://fs-app-tmbv.onrender.com/company/00126380)
+- [SK하이닉스](https://fs-app-tmbv.onrender.com/company/00164779)
+- [NAVER](https://fs-app-tmbv.onrender.com/company/00113570)
+
+## 🛠️ 기술 스택
+
+### Backend
+- **FastAPI**: 고성능 Python 웹 프레임워크
+- **SQLite**: 경량 데이터베이스
+- **DART Open API**: 금융감독원 공시 데이터
+- **Plotly**: 인터랙티브 차트 생성
+
+### Frontend
+- **Bootstrap 5**: 반응형 UI 프레임워크
+- **Plotly.js**: 클라이언트 사이드 차트 렌더링
+- **FontAwesome**: 아이콘 라이브러리
+
+### Deployment
+- **Render**: 클라우드 배포 플랫폼
+- **Docker**: 컨테이너화 지원
+
+## 📦 설치 및 실행
+
+### 1. 저장소 클론
 ```bash
-cd fs-project
+git clone https://github.com/RyuJaeChun/fs-app.git
+cd fs-app
+```
+
+### 2. 의존성 설치
+```bash
 pip install -r requirements.txt
 ```
 
-2. **DART API 키 발급**
-   - [DART 홈페이지](https://opendart.fss.or.kr/)에서 회원가입
-   - 인증키 신청 후 승인 대기 (보통 1-2일 소요)
-
-3. **환경 설정**
+### 3. 환경 변수 설정
 ```bash
-python config_setup.py
-```
-또는 수동으로 `.env` 파일 생성:
-```
-DART_API_KEY=your_40_character_api_key_here
+# .env 파일 생성
+DART_API_KEY=your_dart_api_key_here
+PORT=8000
 ```
 
-## 🚀 사용법
+### 4. 로컬 서버 실행
+```bash
+# 개발 서버
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
-### 기본 사용법
+# 또는 테스트 서버
+python test_local.py
+```
 
+### 5. 웹 브라우저에서 접속
+```
+http://localhost:8000
+```
+
+## 🗂️ 프로젝트 구조
+
+```
+fs-app/
+├── 📁 static/                    # 정적 파일
+│   └── style.css                 # 스타일시트
+├── 📁 templates/                 # HTML 템플릿
+│   ├── index.html                # 메인 페이지
+│   └── company_detail.html       # 기업 상세 페이지
+├── 📄 app.py                     # FastAPI 메인 애플리케이션
+├── 📄 dart_api.py                # DART API 클라이언트
+├── 📄 database.py                # 데이터베이스 관리
+├── 📄 financial_analyzer.py      # 재무 분석 로직
+├── 📄 test_local.py              # 로컬 테스트 서버
+├── 📄 corpCodes.json             # 상장회사 목록 데이터
+├── 📄 companies.db               # SQLite 데이터베이스
+├── 📄 requirements.txt           # Python 의존성
+├── 📄 Dockerfile                 # Docker 설정
+└── 📄 README.md                  # 프로젝트 문서
+```
+
+## 🎯 핵심 기능 상세
+
+### 재무상태표 박스 차트
+```
+┌─────────────┐    =    ┌─────────────┐
+│             │         │    자본     │
+│ 비유동자산   │         │   (75.7%)   │
+│ (76.9%)     │         │             │
+│             │         ├─────────────┤
+├─────────────┤         │ 비유동부채   │
+│             │         │  (10.2%)    │
+│ 유동자산     │         ├─────────────┤
+│ (23.1%)     │         │ 유동부채     │
+│             │         │  (14.1%)    │
+└─────────────┘         └─────────────┘
+    자산                  부채 + 자본
+```
+
+### 반응형 메트릭 표시
+- **데스크톱**: 큰 폰트와 상세 정보
+- **태블릿**: 중간 크기 최적화
+- **모바일**: 작은 화면에 맞는 축약 표시
+
+### 배치 API 최적화
 ```python
-from dart_api import DartAPI, get_recent_date_range
+# 기존: 4번의 개별 API 호출
+GET /api/financial_chart/revenue/{corp_code}
+GET /api/financial_chart/profit/{corp_code}  
+GET /api/financial_chart/assets/{corp_code}
+GET /api/financial_pie/{corp_code}
 
-# API 인스턴스 생성
-dart = DartAPI()
-
-# 최근 7일간의 유가증권시장 공시 검색
-bgn_de, end_de = get_recent_date_range(7)
-disclosures = dart.get_all_disclosures(
-    bgn_de=bgn_de,
-    end_de=end_de,
-    corp_cls='Y'  # 유가증권시장
-)
-
-# 다양한 형식으로 저장
-dart.save_data(disclosures, 'recent_disclosures', 'csv')    # CSV 저장
-dart.save_data(disclosures, 'recent_disclosures', 'json')   # JSON 저장
-dart.save_data(disclosures, 'recent_disclosures', 'excel')  # Excel 저장
-dart.save_data(disclosures, 'recent_disclosures', 'all')    # 모든 형식
+# 개선: 1번의 배치 API 호출
+GET /api/financial_charts_batch/{corp_code}
 ```
 
-### 회사 코드 다운로드
+## 🔧 API 엔드포인트
 
-```python
-# 전체 상장회사 고유번호 다운로드
-corp_codes = dart.download_corp_codes(save_json=True)
+### 메인 페이지
+- `GET /`: 상장회사 목록 및 검색
 
-# 저장된 회사 코드 로드
-corp_codes = dart.load_corp_codes()
+### 기업 상세 페이지  
+- `GET /company/{corp_code}`: 기업 상세 정보 및 차트
 
-# 회사명으로 검색
-samsung_results = dart.search_company("삼성전자")
-if samsung_results:
-    samsung = samsung_results[0]
-    print(f"회사명: {samsung['corp_name']}")
-    print(f"고유번호: {samsung['corp_code']}")
-    print(f"종목코드: {samsung['stock_code']}")
-```
+### 데이터 API
+- `GET /api/financial/{corp_code}`: 재무 데이터
+- `GET /api/financial_charts_batch/{corp_code}`: 모든 차트 데이터
+- `GET /api/balance_sheet_box/{corp_code}`: 재무상태표 박스 차트
 
-### 특정 회사 검색
+### 분석 API
+- `GET /api/analyze/{corp_code}`: AI 재무 분석 (Gemini)
+- `GET /api/terms/{term}`: 재무용어 설명
 
-```python
-# 회사명으로 고유번호 찾기
-samsung_results = dart.search_company("삼성전자")
-if samsung_results:
-    corp_code = samsung_results[0]['corp_code']
-    
-    # 해당 회사의 최근 30일 공시
-    disclosures = dart.get_all_disclosures(
-        corp_code=corp_code,
-        bgn_de='20240101',
-        end_de='20240131'
-    )
-```
+## 💡 사용법
 
-### 공시 유형별 검색
+### 1. 기업 검색
+메인 페이지에서 회사명 또는 종목코드로 검색
 
-```python
-# 정기공시만 검색
-disclosures = dart.get_all_disclosures(
-    pblntf_ty='A',  # 정기공시
-    corp_cls='Y',   # 유가증권시장
-    bgn_de='20240101',
-    end_de='20240131'
-)
-```
+### 2. 재무 분석
+- 상단 메트릭에서 핵심 지표 확인
+- 4개 차트에서 추세 및 구성 분석
+- 재무상태표 박스 차트에서 재무구조 파악
 
-## 📚 주요 파라미터
+### 3. 연도 변경
+드롭다운에서 분석 연도 선택 (2019-2023)
 
-### 공시 유형 (pblntf_ty)
-- `A`: 정기공시
-- `B`: 주요사항보고
-- `C`: 발행공시
-- `D`: 지분공시
-- `E`: 기타공시
-- `F`: 외부감사관련
-- `G`: 펀드공시
-- `H`: 자산유동화
-- `I`: 거래소공시
-- `J`: 공정위공시
+### 4. AI 분석
+"AI 분석 보기" 버튼으로 Gemini AI의 재무 분석 리포트 확인
 
-### 법인 구분 (corp_cls)
-- `Y`: 유가증권시장
-- `K`: 코스닥시장
-- `N`: 코넥스시장
-- `E`: 기타
+## 🎨 디자인 시스템
 
-### 저장 형식
-- **CSV**: Excel에서 바로 열기 가능, 데이터 분석에 적합
-- **JSON**: 프로그래밍에서 사용 편리, API 연동에 적합
-- **Excel**: 일반 사용자 친화적, 보고서 작성에 적합
+### 색상 팔레트
+- **매출액**: `#2E86AB` (파란색)
+- **순이익**: `#A23B72` (자주색)  
+- **총자산**: `#F18F01` (주황색)
+- **유동자산**: `#87CEEB` (밝은 파란색)
+- **비유동자산**: `#4682B4` (진한 파란색)
+- **유동부채**: `#FFB6C1` (밝은 빨간색)
+- **비유동부채**: `#DC143C` (진한 빨간색)
+- **자본**: `#32CD32` (초록색)
 
-#### 저장 형식 사용법
-```python
-# 단일 형식 저장
-dart.save_data(disclosures, 'filename', 'csv')    # CSV만
-dart.save_data(disclosures, 'filename', 'json')   # JSON만  
-dart.save_data(disclosures, 'filename', 'excel')  # Excel만
+### 반응형 브레이크포인트
+- **XS**: < 576px (모바일)
+- **SM**: 576px - 768px (큰 모바일)
+- **MD**: 768px - 992px (태블릿)
+- **LG**: 992px - 1200px (작은 데스크톱)
+- **XL**: > 1200px (큰 데스크톱)
 
-# 모든 형식으로 한번에 저장
-dart.save_data(disclosures, 'filename', 'all')    # CSV, JSON, Excel 모두
+## 🔒 보안 및 성능
 
-# 기존 방식도 지원
-dart.save_to_csv(disclosures, 'file.csv')
-dart.save_to_json(disclosures, 'file.json')
-dart.save_to_excel(disclosures, 'file.xlsx')
-```
+### 보안
+- **환경 변수**: API 키 및 민감 정보 보호
+- **HTTPS**: 배포 환경에서 SSL 적용
+- **입력 검증**: FastAPI 자동 데이터 검증
 
-## 📁 파일 구조
+### 성능 최적화
+- **배치 API**: 네트워크 요청 최소화
+- **캐싱**: 정적 파일 브라우저 캐싱
+- **압축**: Gzip 압축 적용
+- **비동기 처리**: FastAPI async/await 활용
 
-```
-fs-project/
-├── dart_api.py          # 메인 API 클래스
-├── example_usage.py     # 사용 예시 스크립트
-├── corp_codes_example.py # 회사 코드 다운로드 및 검색 예시
-├── save_format_example.py # 다양한 저장 형식 예시
-├── config_setup.py      # 설정 도우미 스크립트
-├── quick_start.py       # 빠른 시작 가이드
-├── requirements.txt     # 의존성 패키지
-├── env_example.txt      # 환경변수 예시
-├── corpCodes.json       # 회사 코드 파일 (다운로드 후 생성)
-└── README.md           # 프로젝트 설명서
-```
+## 📊 데이터 소스
 
-## 🔧 예시 스크립트 실행
+### DART Open API
+- **제공처**: 금융감독원
+- **데이터**: 상장회사 공시 정보
+- **업데이트**: 실시간 공시 반영
+- **범위**: 2019-2023년 재무제표
 
-### 1. 설정 도우미 실행
-```bash
-python config_setup.py
-```
-- API 키 설정
-- 연결 테스트
-- 상태 코드 및 유형 정보 확인
+### 포함 데이터
+- **손익계산서**: 매출액, 영업이익, 순이익
+- **재무상태표**: 자산, 부채, 자본 (유동/비유동 구분)
+- **재무비율**: 수익성, 안정성, 유동성 지표
 
-### 2. 사용 예시 실행
-```bash
-python example_usage.py
-```
-- 다양한 검색 예시 실행
-- 파일 저장 예시
-- 데이터 분석 예시
+## 🤝 기여하기
 
-### 3. 회사 코드 다운로드 및 검색
-```bash
-python corp_codes_example.py
-```
-- 전체 상장회사 고유번호 다운로드
-- 회사명으로 검색 기능
-- Excel 파일로 회사 목록 저장
-
-### 4. 저장 형식 예시
-```bash
-python save_format_example.py
-```
-- CSV, JSON, Excel 저장 방식 비교
-- 형식별 특징 및 사용법 안내
-
-### 5. 직접 실행
-```bash
-python dart_api.py
-```
-- 최근 7일간 유가증권시장 공시 검색
-- CSV 및 JSON 파일로 자동 저장
-
-## ⚠️ 주의사항
-
-1. **API 사용 제한**
-   - 일반적으로 일일 20,000건 제한
-   - 과도한 요청 시 일시적 차단 가능
-
-2. **검색 기간 제한**
-   - 고유번호 없이 검색 시 최대 3개월
-
-3. **데이터 처리**
-   - 대량 데이터 검색 시 메모리 사용량 주의
-   - 페이지별 처리로 메모리 효율성 확보
-
-## 🐛 문제 해결
-
-### API 키 관련 오류
-- `010`: 등록되지 않은 키 → API 키 재확인
-- `011`: 사용할 수 없는 키 → 키 상태 확인
-- `012`: 접근할 수 없는 IP → IP 등록 확인
-
-### 검색 결과 관련
-- `013`: 조회된 데이터 없음 → 검색 조건 변경
-- `020`: 요청 제한 초과 → 잠시 후 재시도
-- `021`: 조회 가능한 회사 개수 초과 → 검색 범위 축소
-
-## 📞 지원
-
-- **DART 고객센터**: opendart@fss.or.kr
-- **DART 개발가이드**: [https://opendart.fss.or.kr/guide/](https://opendart.fss.or.kr/guide/)
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
 
 ## 📄 라이선스
 
-이 프로젝트는 DART Open API의 이용약관을 준수합니다.
+이 프로젝트는 MIT 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+## 🙏 감사의 말
+
+- **금융감독원**: DART Open API 제공
+- **Plotly**: 뛰어난 차트 라이브러리
+- **FastAPI**: 현대적인 웹 프레임워크
+- **Render**: 무료 클라우드 호스팅
 
 ---
 
-*이 프로젝트는 금융감독원 DART Open API를 활용한 비공식 라이브러리입니다.*
+📧 **문의사항**: GitHub Issues 또는 [이메일](mailto:your-email@example.com)
+
+⭐ **이 프로젝트가 도움이 되셨다면 Star를 눌러주세요!**
